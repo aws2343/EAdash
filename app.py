@@ -153,8 +153,6 @@ st.markdown("---")
 st.caption("Dashboard created for XYZ HR Leadership • Powered by Streamlit")
 
 
----
-
 ### ✅ requirements.txt
 
 ```txt
