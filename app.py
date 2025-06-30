@@ -1,161 +1,106 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Employee Attrition Dashboard", layout="wide")
-st.title("📊 Employee Attrition Dashboard")
-st.markdown("This interactive dashboard provides key insights for HR leadership to monitor and analyze employee attrition patterns across the organization.")
+
+st.title("📊 Employee Attrition Analytics Dashboard")
+st.markdown("This dashboard provides in-depth insights into employee attrition to support strategic HR decisions.")
 
 # Load data
 df = pd.read_csv("EA.csv")
 
-# Encode 'Attrition' if it's categorical
-if df['Attrition'].dtype == 'object':
+# Label Encoding for Attrition (if needed)
+if df['Attrition'].dtype != 'int64':
     le = LabelEncoder()
     df['Attrition'] = le.fit_transform(df['Attrition'])
 
-# Sidebar filters
-st.sidebar.header("Filter Options")
-departments = st.sidebar.multiselect("Department", options=df['Department'].unique(), default=df['Department'].unique())
-genders = st.sidebar.multiselect("Gender", options=df['Gender'].unique(), default=df['Gender'].unique())
-ages = st.sidebar.slider("Age Range", int(df['Age'].min()), int(df['Age'].max()), (25, 50))
+# Sidebar Filters
+st.sidebar.header("Filter the data:")
 
-filtered_df = df[
-    (df['Department'].isin(departments)) &
-    (df['Gender'].isin(genders)) &
-    (df['Age'].between(ages[0], ages[1]))
-]
+# Example Filters
+departments = st.sidebar.multiselect("Select Department(s):", options=df['Department'].unique(), default=df['Department'].unique())
+genders = st.sidebar.multiselect("Select Gender(s):", options=df['Gender'].unique(), default=df['Gender'].unique())
+ages = st.sidebar.slider("Select Age Range:", int(df['Age'].min()), int(df['Age'].max()), (25, 50))
 
-# Tabs
-tab1, tab2 = st.tabs(["📈 Overview", "🔍 Detailed Analysis"])
+# Apply filters
+filtered_df = df[(df['Department'].isin(departments)) &
+                 (df['Gender'].isin(genders)) &
+                 (df['Age'] >= ages[0]) & (df['Age'] <= ages[1])]
+
+# Tabs for Macro and Micro Analysis
+tab1, tab2 = st.tabs(["📈 Macro-Level Insights", "🔍 Micro-Level Employee Views"])
 
 with tab1:
-    st.header("Overview Metrics and Visualizations")
-
+    st.header("📌 Key Metrics")
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Employees", len(filtered_df))
     col2.metric("Attrition Count", int(filtered_df['Attrition'].sum()))
     col3.metric("Attrition Rate (%)", round(filtered_df['Attrition'].mean() * 100, 2))
 
-    # 1. Attrition by Department
     st.subheader("1. Attrition by Department")
-    st.caption("Shows which departments have the highest attrition counts.")
+    st.caption("This shows how attrition is distributed across departments.")
     fig1 = px.histogram(filtered_df, x="Department", color="Attrition", barmode="group")
     st.plotly_chart(fig1, use_container_width=True)
 
-    # 2. Age Distribution
-    st.subheader("2. Age Distribution with Attrition")
-    fig2 = px.histogram(filtered_df, x="Age", color="Attrition", nbins=30)
+    st.subheader("2. Age Distribution")
+    st.caption("Age-wise count of employees with attrition overlay.")
+    fig2 = px.histogram(filtered_df, x="Age", color="Attrition", nbins=30, marginal="rug")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # 3. Gender and Attrition
-    st.subheader("3. Attrition by Gender")
+    st.subheader("3. Gender vs Attrition")
+    st.caption("This explores attrition trends by gender.")
     fig3 = px.histogram(filtered_df, x="Gender", color="Attrition", barmode="group")
     st.plotly_chart(fig3, use_container_width=True)
 
-    # 4. Monthly Income Distribution
     st.subheader("4. Monthly Income Distribution")
+    st.caption("Income distribution among current and former employees.")
     fig4 = px.box(filtered_df, x="Attrition", y="MonthlyIncome", color="Attrition")
     st.plotly_chart(fig4, use_container_width=True)
 
-    # 5. Job Role and Attrition
     st.subheader("5. Job Role vs Attrition")
+    st.caption("Which job roles have the most attrition?")
     fig5 = px.histogram(filtered_df, x="JobRole", color="Attrition", barmode="group")
     st.plotly_chart(fig5, use_container_width=True)
 
-    # 6. Education Field and Attrition
-    st.subheader("6. Education Field and Attrition")
-    fig6 = px.histogram(filtered_df, x="EducationField", color="Attrition", barmode="group")
-    st.plotly_chart(fig6, use_container_width=True)
-
-    # 7. Years at Company
-    st.subheader("7. Years at Company vs Attrition")
-    fig7 = px.box(filtered_df, x="Attrition", y="YearsAtCompany", color="Attrition")
-    st.plotly_chart(fig7, use_container_width=True)
-
-    # 8. Environment Satisfaction
-    st.subheader("8. Environment Satisfaction")
-    fig8 = px.histogram(filtered_df, x="EnvironmentSatisfaction", color="Attrition", barmode="group")
-    st.plotly_chart(fig8, use_container_width=True)
-
-    # 9. Work-Life Balance
-    st.subheader("9. Work-Life Balance and Attrition")
-    fig9 = px.histogram(filtered_df, x="WorkLifeBalance", color="Attrition", barmode="group")
-    st.plotly_chart(fig9, use_container_width=True)
-
-    # 10. OverTime vs Attrition
-    if 'OverTime' in df.columns:
-        st.subheader("10. OverTime and Attrition")
-        fig10 = px.histogram(filtered_df, x="OverTime", color="Attrition", barmode="group")
-        st.plotly_chart(fig10, use_container_width=True)
+    st.subheader("6. Heatmap of Correlation")
+    st.caption("This visualizes correlation between numerical features and attrition.")
+    corr = filtered_df.select_dtypes(include='number').corr()
+    fig6, ax6 = plt.subplots(figsize=(10, 6))
+    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax6)
+    st.pyplot(fig6)
 
 with tab2:
-    st.header("Micro-Level Exploration")
+    st.header("🔍 Employee-Level Details")
+    st.caption("Use dropdowns to drill down to individual employee records.")
 
-    # 11. Heatmap
-    st.subheader("11. Correlation Heatmap")
-    st.caption("Shows correlation between numerical variables and attrition.")
-    corr = filtered_df.select_dtypes(include='number').corr()
-    fig11, ax11 = plt.subplots(figsize=(12, 8))
-    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", ax=ax11)
-    st.pyplot(fig11)
+    selected_emp = st.selectbox("Select an Employee ID:", df['EmployeeNumber'])
+    emp_info = df[df['EmployeeNumber'] == selected_emp]
+    st.write(emp_info.T)
 
-    # 12. Marital Status and Attrition
-    st.subheader("12. Marital Status")
-    fig12 = px.histogram(filtered_df, x="MaritalStatus", color="Attrition", barmode="group")
-    st.plotly_chart(fig12, use_container_width=True)
+    st.subheader("7. Education vs Attrition")
+    st.caption("Exploring attrition across education levels.")
+    fig7 = px.histogram(filtered_df, x="EducationField", color="Attrition", barmode="group")
+    st.plotly_chart(fig7, use_container_width=True)
 
-    # 13. Distance From Home
-    st.subheader("13. Distance From Home")
-    fig13 = px.box(filtered_df, x="Attrition", y="DistanceFromHome", color="Attrition")
-    st.plotly_chart(fig13, use_container_width=True)
+    st.subheader("8. Years at Company vs Attrition")
+    fig8 = px.box(filtered_df, x="Attrition", y="YearsAtCompany", color="Attrition")
+    st.plotly_chart(fig8, use_container_width=True)
 
-    # 14. Years With Current Manager
-    st.subheader("14. Years With Current Manager")
-    fig14 = px.box(filtered_df, x="Attrition", y="YearsWithCurrManager", color="Attrition")
-    st.plotly_chart(fig14, use_container_width=True)
+    st.subheader("9. Overtime vs Attrition")
+    if "OverTime" in df.columns:
+        fig9 = px.histogram(filtered_df, x="OverTime", color="Attrition", barmode="group")
+        st.plotly_chart(fig9, use_container_width=True)
 
-    # 15. Num Companies Worked
-    st.subheader("15. Number of Companies Worked")
-    fig15 = px.histogram(filtered_df, x="NumCompaniesWorked", color="Attrition", barmode="group")
-    st.plotly_chart(fig15, use_container_width=True)
+    st.subheader("10. Performance Rating")
+    if "PerformanceRating" in df.columns:
+        fig10 = px.box(filtered_df, x="Attrition", y="PerformanceRating", color="Attrition")
+        st.plotly_chart(fig10, use_container_width=True)
 
-    # 16. Total Working Years
-    st.subheader("16. Total Working Years")
-    fig16 = px.box(filtered_df, x="Attrition", y="TotalWorkingYears", color="Attrition")
-    st.plotly_chart(fig16, use_container_width=True)
-
-    # 17. Job Level
-    st.subheader("17. Job Level")
-    fig17 = px.histogram(filtered_df, x="JobLevel", color="Attrition", barmode="group")
-    st.plotly_chart(fig17, use_container_width=True)
-
-    # 18. Training Times Last Year
-    st.subheader("18. Training Times Last Year")
-    fig18 = px.histogram(filtered_df, x="TrainingTimesLastYear", color="Attrition", barmode="group")
-    st.plotly_chart(fig18, use_container_width=True)
-
-    # 19. Relationship Satisfaction
-    st.subheader("19. Relationship Satisfaction")
-    fig19 = px.histogram(filtered_df, x="RelationshipSatisfaction", color="Attrition", barmode="group")
-    st.plotly_chart(fig19, use_container_width=True)
-
-    # 20. Hourly Rate
-    if "HourlyRate" in df.columns:
-        st.subheader("20. Hourly Rate")
-        fig20 = px.box(filtered_df, x="Attrition", y="HourlyRate", color="Attrition")
-        st.plotly_chart(fig20, use_container_width=True)
+# Add more charts (up to 20+) in this format using st.subheader(), fig = px/plt, st.plotly_chart/st.pyplot
 
 st.markdown("---")
-st.caption("Dashboard created for XYZ HR Leadership • Powered by Streamlit")
-
-
-### ✅ requirements.txt
-
-st
-pd
-plt
-sns
-px
+st.caption("Dashboard created for XYZ Company – HR Analytics Team")
