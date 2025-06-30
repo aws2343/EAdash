@@ -161,4 +161,3 @@ pandas
 matplotlib
 seaborn
 plotly
-scikit-learn
