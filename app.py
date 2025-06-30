@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
-from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Employee Attrition Dashboard", layout="wide")
 st.title("📊 Employee Attrition Dashboard")
