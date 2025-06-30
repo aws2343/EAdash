@@ -149,7 +149,9 @@ with tab2:
         fig20 = px.box(filtered_df, x="Attrition", y="HourlyRate", color="Attrition")
         st.plotly_chart(fig20, use_container_width=True)
 
-st.markdown(\"---\")\nst.caption(\"Dashboard created for XYZ HR Leadership • Powered by Streamlit\")\n```
+st.markdown("---")
+st.caption("Dashboard created for XYZ HR Leadership • Powered by Streamlit")
+
 
 ---
 
