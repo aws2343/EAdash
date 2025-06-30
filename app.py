@@ -156,7 +156,7 @@ st.caption("Dashboard created for XYZ HR Leadership • Powered by Streamlit")
 ### ✅ requirements.txt
 
 st
-pandas
-matplotlib
-seaborn
-plotly
+pd
+plt
+sns
+px
